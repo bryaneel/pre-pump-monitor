@@ -22,7 +22,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
-    - run: npm ci
+    - run: npm install
     - name: Run Monitor
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
