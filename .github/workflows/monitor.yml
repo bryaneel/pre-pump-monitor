@@ -1,0 +1,41 @@
+name: Pre-Pump Monitor
+
+on:
+  schedule:
+    - cron: '*/15 9-21 * * 1-5'  # Every 15 min, 9 AM-9 PM EST, Mon-Fri
+    - cron: '0 18 * * 0'         # Sunday 6 PM weekly report
+  workflow_dispatch:
+    inputs:
+      check_type:
+        description: 'Check type'
+        required: false
+        default: 'quick'
+        type: choice
+        options: [quick, deep, test]
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    - run: npm ci
+    - name: Run Monitor
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        NANSEN_API_KEY: ${{ secrets.NANSEN_API_KEY }}
+      run: |
+        if [ "${{ github.event.inputs.check_type }}" = "test" ]; then
+          node src/test.js
+        elif [ "${{ github.event.schedule }}" = "0 18 * * 0" ]; then
+          node src/weekly.js
+        else
+          node src/monitor.js
+        fi
